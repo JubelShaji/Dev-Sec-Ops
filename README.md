@@ -1,4 +1,4 @@
-### Kubernetes Setup  :
+# Kubernetes Setup  :
 ## User-data script to install Kubeadm  in ubuntu
 ```
 #!/bin/bash
