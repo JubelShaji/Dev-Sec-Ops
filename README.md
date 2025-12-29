@@ -1,4 +1,4 @@
-###Kubernetes Setup  :
+### Kubernetes Setup  :
 ## User-data script to install Kubeadm  in ubuntu
 ```
 #!/bin/bash
@@ -61,7 +61,7 @@ systemctl enable kubelet
 echo "Kubernetes components installed successfully"
 
 ```
-##After Kubeadm is installed :
+## After Kubeadm is installed :
 ```
 (On master node)
 sudo kubeadm init --pod-network-cidr=192.168.0.0/16   
