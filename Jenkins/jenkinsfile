@@ -1,0 +1,183 @@
+pipeline {
+    agent none
+
+    environment {
+        DOCKER_REGISTRY = 'jubelshaji'
+        IMAGE_TAG = "${BUILD_NUMBER}"
+    }
+
+    stages {
+        stage('Building Containers') {
+            agent {
+                kubernetes {
+                    yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  serviceAccountName: jenkins
+  containers:
+    - name: git
+      image: alpine/git:latest
+      command: ['cat']
+      tty: true
+
+    - name: kaniko-vote
+      image: gcr.io/kaniko-project/executor:debug
+      command: ['sleep', 'infinity']
+      tty: true
+      volumeMounts:
+        - name: kaniko-secret
+          mountPath: /kaniko/.docker
+          readOnly: true
+
+    - name: kaniko-seed
+      image: gcr.io/kaniko-project/executor:debug
+      command: ['sleep', 'infinity']
+      tty: true
+      volumeMounts:
+        - name: kaniko-secret
+          mountPath: /kaniko/.docker
+          readOnly: true
+
+    - name: kaniko-worker
+      image: gcr.io/kaniko-project/executor:debug
+      command: ['sleep', 'infinity']
+      tty: true
+      volumeMounts:
+        - name: kaniko-secret
+          mountPath: /kaniko/.docker
+          readOnly: true
+
+    - name: kaniko-result
+      image: gcr.io/kaniko-project/executor:debug
+      command: ['sleep', 'infinity']
+      tty: true
+      volumeMounts:
+        - name: kaniko-secret
+          mountPath: /kaniko/.docker
+          readOnly: true
+
+  volumes:
+    - name: kaniko-secret
+      secret:
+        secretName: regcred
+        items:
+            - key: .dockerconfigjson
+              path: config.json
+"""
+                }
+            }
+
+            stages {
+                stage('Checkout Source') {
+                    steps {
+                        container('git') {
+                            echo "📦 Checking out source code..."
+                            git branch: 'main', url: 'https://github.com/JubelShaji/CI-CD-Voting-App.git'
+                        }
+                    }
+                }
+
+                stage('Build Images in Parallel') {
+                    parallel {
+                        stage('Build Vote Image') {
+                            steps {
+                                container('kaniko-vote') {
+                                    echo "🚀 Building Vote image..."
+                                    sh '''
+                                    /kaniko/executor \
+                                        --context=dir:///home/jenkins/agent/workspace/voteapp/vote \
+                                        --dockerfile=Dockerfile \
+                                        --destination=jubelshaji/simple_vote_app:vote-${BUILD_NUMBER} \
+                                        --destination=jubelshaji/simple_vote_app:vote-latest \
+                                        --ignore-path=/product_uuid \
+                                        --verbosity=info
+                                    '''
+                                }
+                            }
+                        }
+
+                        stage('Build Seed Image') {
+                            steps {
+                                container('kaniko-seed') {
+                                    echo "🚀 Building Seed image..."
+                                    sh '''
+                                    /kaniko/executor \
+                                        --context=dir:///home/jenkins/agent/workspace/voteapp/seed-data \
+                                        --dockerfile=Dockerfile \
+                                        --destination=jubelshaji/simple_vote_app:seed-${BUILD_NUMBER} \
+                                        --destination=jubelshaji/simple_vote_app:seed-latest \
+                                        --ignore-path=/product_uuid \
+                                        --verbosity=info
+                                    '''
+                                }
+                            }
+                        }
+
+                        stage('Build Worker Image') {
+                            steps {
+                                container('kaniko-worker') {
+                                    echo "🚀 Building Worker image..."
+                                    sh '''
+                                    /kaniko/executor \
+                                        --context=dir:///home/jenkins/agent/workspace/voteapp/worker \
+                                        --dockerfile=Dockerfile \
+                                        --destination=jubelshaji/simple_vote_app:worker-${BUILD_NUMBER} \
+                                        --destination=jubelshaji/simple_vote_app:worker-latest \
+                                        --ignore-path=/product_uuid \
+                                        --verbosity=info
+                                    '''
+                                }
+                            }
+                        }
+
+                        stage('Build Result Image') {
+                            steps {
+                                container('kaniko-result') {
+                                    echo "🚀 Building Result image..."
+                                    sh '''
+                                    /kaniko/executor \
+                                        --context=dir:///home/jenkins/agent/workspace/voteapp/result \
+                                        --dockerfile=Dockerfile \
+                                        --destination=jubelshaji/simple_vote_app:result-${BUILD_NUMBER} \
+                                        --destination=jubelshaji/simple_vote_app:result-latest \
+                                        --ignore-path=/product_uuid \
+                                        --verbosity=info
+                                    '''
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Update Kubernetes Manifests') {
+            agent any
+            steps {
+                git branch: 'main', url: 'https://github.com/JubelShaji/CI-CD-Voting-App.git'
+                sh """
+                sed -i 's|jubelshaji/simple_vote_app:vote-latest|jubelshaji/simple_vote_app:vote-${BUILD_NUMBER}|g' k8s-specifications/vote-deployment.yaml
+                sed -i 's|jubelshaji/simple_vote_app:worker-latest|jubelshaji/simple_vote_app:worker-${BUILD_NUMBER}|g' k8s-specifications/worker-deployment.yaml
+                sed -i 's|jubelshaji/simple_vote_app:result-latest|jubelshaji/simple_vote_app:result-${BUILD_NUMBER}|g' k8s-specifications/result-deployment.yaml
+                """
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            agent any
+            steps {
+                sh 'kubectl apply -f k8s-specifications/'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '🎉 All Docker images built, pushed & deployed successfully!'
+        }
+        failure {
+            echo '❌ Pipeline failed. Check logs for errors.'
+        }
+    }
+}
