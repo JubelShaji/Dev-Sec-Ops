@@ -8,15 +8,15 @@ docker run -d \
   -v jenkins_home:/var/jenkins_home \
   jenkins/jenkins:lts
 ```
+
 ## Jenkins-agent with trivy installed :
 ```
 The Dockerfile here builds jenkins-agent image  with trivy installed , build and push this image to a registry which kubernetes can access. It is referenced in  jenkinsfile.
 ```
+
 ## Get Jenkins Initial Admin Password :
 ```
-kubectl get pods -n jenkins (Copy pod name)
-kubectl exec -it (pod name) -n jenkins -- /bin/bash
-cat /var/jenkins_home/secrets/initialAdminPassword
+docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
 ```
 
 ## Create regcred secret for kaniko :
@@ -37,6 +37,7 @@ Kubernetes Namespace : jenkins
 Jenkins URL : http://jenkins.jenkins.svc.cluster.local:8080
 Jenkins tunnel : jenkins.jenkins.svc.cluster.local:50000
 ```
+
 ## Jenkins pipeline job name :
 ```
 Use ' voteapp ' , otherwise change path of kaniko build context for every build in the pipeline.
