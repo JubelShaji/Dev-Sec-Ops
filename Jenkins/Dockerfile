@@ -1,24 +1,24 @@
-# Start from the official Jenkins LTS image
-FROM jenkins/jenkins:lts
+FROM jenkins/inbound-agent:latest
 
-# Switch to root to install packages
 USER root
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     curl \
-    git \
-    sudo \
+    wget \
+    gnupg \
+    lsb-release \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Install kubectl
-RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
-    && chmod +x kubectl \
-    && mv kubectl /usr/local/bin/
+# Install Trivy
+RUN wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor > /usr/share/keyrings/trivy.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" \
+       > /etc/apt/sources.list.d/trivy.list \
+    && apt-get update \
+    && apt-get install -y trivy \
+    && rm -rf /var/lib/apt/lists/*
 
-# Switch back to jenkins user
+RUN trivy --version
+
 USER jenkins
-
-# Expose Jenkins ports
-EXPOSE 8080 50000

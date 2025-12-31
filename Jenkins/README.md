@@ -1,8 +1,16 @@
 ## To start Jenkins :
 ```
-cd CI-CD-Voting-App
-kubectl apply -f jenkins/jenkins-namespace.yaml
-kubectl apply -f jenkins/
+docker run -d \
+  --name jenkins \
+  --restart unless-stopped \
+  -p 8080:8080 \
+  -p 50000:50000 \
+  -v jenkins_home:/var/jenkins_home \
+  jenkins/jenkins:lts
+```
+## Jenkins-agent with trivy installed :
+```
+The Dockerfile here builds jenkins-agent image  with trivy installed , build and push this image to a registry which kubernetes can access. It is referenced in  jenkinsfile.
 ```
 ## Get Jenkins Initial Admin Password :
 ```
