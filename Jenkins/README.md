@@ -26,7 +26,6 @@ kubectl create secret docker-registry regcred \
   --docker-username=<your-dockerhub-username> \
   --docker-password=<your-dockerhub-password> \
   --docker-email=<your-email> \
-  -n jenkins
 ```
 
 ##  Configure Kubernets cloud in jenkins:
