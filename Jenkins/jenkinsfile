@@ -107,6 +107,8 @@ spec:
                                         --dockerfile=Dockerfile \
                                         --destination=jubelshaji/simple_vote_app:vote-${BUILD_NUMBER} \
                                         --destination=jubelshaji/simple_vote_app:vote-latest \
+                                        --cache=true \
+                                        --cache-repo=jubelshaji/simple_vote_app/cache \
                                         --ignore-path=/product_uuid \
                                         --verbosity=info
                                     '''
@@ -123,6 +125,8 @@ spec:
                                         --dockerfile=Dockerfile \
                                         --destination=jubelshaji/simple_vote_app:seed-${BUILD_NUMBER} \
                                         --destination=jubelshaji/simple_vote_app:seed-latest \
+                                        --cache=true \
+                                        --cache-repo=jubelshaji/simple_vote_app/cache \
                                         --ignore-path=/product_uuid \
                                         --verbosity=info
                                     '''
@@ -139,6 +143,8 @@ spec:
                                         --dockerfile=Dockerfile \
                                         --destination=jubelshaji/simple_vote_app:worker-${BUILD_NUMBER} \
                                         --destination=jubelshaji/simple_vote_app:worker-latest \
+                                        --cache=true \
+                                        --cache-repo=jubelshaji/simple_vote_app/cache \
                                         --ignore-path=/product_uuid \
                                         --verbosity=info
                                     '''
@@ -155,6 +161,8 @@ spec:
                                         --dockerfile=Dockerfile \
                                         --destination=jubelshaji/simple_vote_app:result-${BUILD_NUMBER} \
                                         --destination=jubelshaji/simple_vote_app:result-latest \
+                                        --cache=true \
+                                        --cache-repo=jubelshaji/simple_vote_app/cache \
                                         --ignore-path=/product_uuid \
                                         --verbosity=info
                                     '''
