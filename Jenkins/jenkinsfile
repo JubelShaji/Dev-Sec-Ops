@@ -9,9 +9,6 @@ pipeline {
 
   stages {
 
-    /* =====================================================
-       CHECKOUT SOURCE (single step, multi-node safe)
-       ===================================================== */
     stage('Checkout Source') {
       agent { kubernetes { yaml gitPod() } }
       steps {
@@ -22,9 +19,6 @@ pipeline {
         }
     }
 
-    /* =====================================================
-       BUILD IMAGES (PARALLEL, PER-POD)
-       ===================================================== */
     stage('Build Images') {
       parallel {
 
@@ -99,9 +93,6 @@ pipeline {
       }
     }
 
-    /* =====================================================
-       TRIVY SCANS (PARALLEL, REPORTS SAVED, NO FAIL)
-       ===================================================== */
     stage('Trivy Scan Images') {
       parallel {
 
@@ -160,9 +151,6 @@ pipeline {
       }
     }
 
-    /* =====================================================
-       DEPLOY TO KUBERNETES
-       ===================================================== */
     stage('Deploy to Kubernetes') {
       agent { kubernetes { yaml kubectlPod() } }
       steps {
