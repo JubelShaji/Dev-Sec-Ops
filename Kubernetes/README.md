@@ -62,27 +62,35 @@ echo "Kubernetes components installed successfully"
 
 ```
 ## After Kubeadm is installed :
+
+### 1) On master node
 ```
-(On master node)
-sudo kubeadm init --pod-network-cidr=192.168.0.0/16   
+sudo kubeadm init --pod-network-cidr=192.168.0.0/16
+```
+```
 mkdir -p $HOME/.kube
 sudo cp /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
+```
 
-(On worker node)
+### 2) On worker node
+```
 sudo kubeadm join <MASTER_IP>:6443 \
   --token <TOKEN> \
   --discovery-token-ca-cert-hash sha256:<HASH>
-
-(On master node)
+```
+### 3) On master node
+```
 kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml
-
+```
+```
 kubectl patch ippool default-ipv4-ippool --type=merge -p '{
   "spec": {
     "ipipMode": "Never",
     "vxlanMode": "Always"
   }
 }'
-
+```
+```
 kubectl rollout restart ds/calico-node -n kube-system
 ```
