@@ -75,5 +75,14 @@ sudo kubeadm join <MASTER_IP>:6443 \
   --discovery-token-ca-cert-hash sha256:<HASH>
 
 (On master node)
-kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml
+
+kubectl patch ippool default-ipv4-ippool --type=merge -p '{
+  "spec": {
+    "ipipMode": "Never",
+    "vxlanMode": "Always"
+  }
+}'
+
+kubectl rollout restart ds/calico-node -n kube-system
 ```
