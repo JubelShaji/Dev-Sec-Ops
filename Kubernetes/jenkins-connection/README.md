@@ -18,5 +18,5 @@ kubectl create secret docker-registry regcred \
 Kubernetes url   : https://<API-SERVER-IP>:6443 ( kubectl cluster-info )
 server certificate   : Copy ca.art  ( cat /etc/kubernetes/pki/ca.crt )
 Kubernetes Namespace : default
-Credentials      : create secret text ( kubectl create token jenkins )
+Credentials      : create secret text ( kubectl create token jenkins --duration=24h )
 ```
