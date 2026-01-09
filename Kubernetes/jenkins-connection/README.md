@@ -3,11 +3,13 @@
 kubectl apply -f jenkins-sa_rbac.yaml
 ```
 
-### 2 ) Token and Server Certificate Key
+### 2 ) Create regcred secret for kaniko :
 ```
-kubectl create token jenkins
-
-cat /etc/kubernetes/pki/ca.crt
+kubectl create secret docker-registry regcred \
+  --docker-server=https://index.docker.io/v1/ \
+  --docker-username=<your-dockerhub-username> \
+  --docker-password=<your-dockerhub-password> \
+  --docker-email=<your-email>
 ```
 
 ## Kubernetes Cofiguration in jenkins :
