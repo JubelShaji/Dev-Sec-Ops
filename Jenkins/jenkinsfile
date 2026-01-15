@@ -27,9 +27,9 @@ pipeline {
           steps {
             container('kaniko') {
               sh """
-              /kaniko/executor \
-                --context=${WORKSPACE}/Voting-App/vote \
-                --dockerfile=Dockerfile \
+                /kaniko/executor \
+                --context=git://github.com/JubelShaji/Dev-Sec-Ops.git#refs/heads/main \
+                --dockerfile=Voting-App/vote/Dockerfile \
                 --destination=${REGISTRY}/${IMAGE}:vote-${TAG} \
                 --destination=${REGISTRY}/${IMAGE}:vote-latest \
                 --cache=true \
@@ -45,8 +45,8 @@ pipeline {
             container('kaniko') {
               sh """
               /kaniko/executor \
-                --context=${WORKSPACE}/Voting-App/seed-data \
-                --dockerfile=Dockerfile \
+                --context=git://github.com/JubelShaji/Dev-Sec-Ops.git#refs/heads/main \
+                --dockerfile=Voting-App/seed/Dockerfile \
                 --destination=${REGISTRY}/${IMAGE}:seed-${TAG} \
                 --destination=${REGISTRY}/${IMAGE}:seed-latest \
                 --cache=true \
@@ -62,8 +62,8 @@ pipeline {
             container('kaniko') {
               sh """
               /kaniko/executor \
-                --context=${WORKSPACE}/Voting-App/worker \
-                --dockerfile=Dockerfile \
+                --context=git://github.com/JubelShaji/Dev-Sec-Ops.git#refs/heads/main \
+                --dockerfile=Voting-App/worker/Dockerfile \
                 --destination=${REGISTRY}/${IMAGE}:worker-${TAG} \
                 --destination=${REGISTRY}/${IMAGE}:worker-latest \
                 --cache=true \
@@ -79,8 +79,8 @@ pipeline {
             container('kaniko') {
               sh """
               /kaniko/executor \
-                --context=${WORKSPACE}/Voting-App/result \
-                --dockerfile=Dockerfile \
+                --context=git://github.com/JubelShaji/Dev-Sec-Ops.git#refs/heads/main \
+                --dockerfile=Voting-App/result/Dockerfile \
                 --destination=${REGISTRY}/${IMAGE}:result-${TAG} \
                 --destination=${REGISTRY}/${IMAGE}:result-latest \
                 --cache=true \
