@@ -1,208 +1,196 @@
 pipeline {
-  agent none
-
-  environment {
-    REGISTRY = 'jubelshaji'
-    IMAGE    = 'vote_app'
-    TAG      = "${BUILD_NUMBER}"
-  }
-
-  stages {
-
-    stage('Building Containers  .....') {
-      agent {
+    agent {
         kubernetes {
-          yaml allInSinglePod()
+            yaml allInSinglePod()
         }
-      }
     }
 
-    stage('Checkout Source for Scans') {
-      steps {
-        container('git') {
-          echo "📦 Cloning source for Trivy scans..."
-          git branch: 'main', url: 'https://github.com/JubelShaji/Dev-Sec-Ops.git'
-        }
-      }
+    environment {
+        REGISTRY = 'jubelshaji'
+        IMAGE    = 'vote_app'
+        TAG      = "${BUILD_NUMBER}"
     }
 
-    stage ('Building Images') {
-      parallel {
+    stages {
 
-        stage('Build Vote Image') {
-          steps {
-            container('kaniko-vote') {
-              sh """
-                /kaniko/executor \
-                  --context=${WORKSPACE}/Voting-App/vote \
-                  --dockerfile=Dockerfile \
-                  --destination=${REGISTRY}/${IMAGE}:vote-${TAG} \
-                  --destination=${REGISTRY}/${IMAGE}:vote-latest \
-                  --cache=true \
-                  --cache-repo=${REGISTRY}/${IMAGE}/cache
-              """
-            }
-          }
-        }
-
-        stage('Build Seed Image') {
-          steps {
-            container('kaniko-seed') {
-              sh """
-                /kaniko/executor \
-                  --context=${WORKSPACE}/Voting-App/seed \
-                  --dockerfile=Dockerfile \
-                  --destination=${REGISTRY}/${IMAGE}:seed-${TAG} \
-                  --destination=${REGISTRY}/${IMAGE}:seed-latest \
-                  --cache=true \
-                  --cache-repo=${REGISTRY}/${IMAGE}/cache
-              """
-            }
-          }
-        }
-
-        stage('Build Worker Image') {
-          steps {
-            container('kaniko-worker') {
-              sh """
-                /kaniko/executor \
-                  --context=${WORKSPACE}/Voting-App/worker \
-                  --dockerfile=Dockerfile \
-                  --destination=${REGISTRY}/${IMAGE}:worker-${TAG} \
-                  --destination=${REGISTRY}/${IMAGE}:worker-latest \
-                  --cache=true \
-                  --cache-repo=${REGISTRY}/${IMAGE}/cache
-              """
-            }
-          }
-        }
-
-        stage('Build Result Image') {
-          steps {
-            container('kaniko-result') {
-              sh """
-                /kaniko/executor \
-                  --context=${WORKSPACE}/Voting-App/result \
-                  --dockerfile=Dockerfile \
-                  --destination=${REGISTRY}/${IMAGE}:result-${TAG} \
-                  --destination=${REGISTRY}/${IMAGE}:result-latest \
-                  --cache=true \
-                  --cache-repo=${REGISTRY}/${IMAGE}/cache
-              """
-            }
-          }
-        }
-      }
-    }
-  }
-
-  stages {
-    stage('Building Containers ....') {
-      agent {
-        kubernetes {
-          yaml singlePodForTrivy()
-          defaultContainer 'trivy'
-        }
-      }
-    stage('Checkout Source for Scans') {
-      steps {
-        container('git') {
-          echo "📦 Cloning source for Trivy scans..."
-          git branch: 'main', url: 'https://github.com/JubelShaji/Dev-Sec-Ops.git'
-        }
-      }
-    }
-
-    stage('Scan Images') {
-      parallel {
-
-        stage('Scan Vote') {
-              steps {
-                container('trivy') {
-                  sh """
-                    trivy image --exit-code 0 --format json --output trivy-vote.json ${REGISTRY}/${IMAGE}:vote-${TAG}
-                    trivy image --exit-code 0 --format template --template '@contrib/html.tpl' --output trivy-vote.html ${REGISTRY}/${IMAGE}:vote-${TAG}
-                  """
+        stage('Checkout Source') {
+            steps {
+                container('git') {
+                    echo "📦 Cloning source for building images..."
+                    git branch: 'main', url: 'https://github.com/JubelShaji/Dev-Sec-Ops.git'
                 }
-                archiveArtifacts artifacts: 'trivy-vote.*', onlyIfSuccessful: false
-              }
             }
-
-            stage('Scan Seed') {
-              steps {
-                container('trivy') {
-                  sh """
-                    trivy image --exit-code 0 --format json --output trivy-seed.json ${REGISTRY}/${IMAGE}:seed-${TAG}
-                    trivy image --exit-code 0 --format template --template '@contrib/html.tpl' --output trivy-seed.html ${REGISTRY}/${IMAGE}:seed-${TAG}
-                  """
-                }
-                archiveArtifacts artifacts: 'trivy-seed.*', onlyIfSuccessful: false
-              }
-            }
-
-            stage('Scan Worker') {
-              steps {
-                container('trivy') {
-                  sh """
-                    trivy image --exit-code 0 --format json --output trivy-worker.json ${REGISTRY}/${IMAGE}:worker-${TAG}
-                    trivy image --exit-code 0 --format template --template '@contrib/html.tpl' --output trivy-worker.html ${REGISTRY}/${IMAGE}:worker-${TAG}
-                  """
-                }
-                archiveArtifacts artifacts: 'trivy-worker.*', onlyIfSuccessful: false
-              }
-            }
-
-            stage('Scan Result') {
-              steps {
-                container('trivy') {
-                  sh """
-                    trivy image --exit-code 0 --format json --output trivy-result.json ${REGISTRY}/${IMAGE}:result-${TAG}
-                    trivy image --exit-code 0 --format template --template '@contrib/html.tpl' --output trivy-result.html ${REGISTRY}/${IMAGE}:result-${TAG}
-                  """
-                }
-                archiveArtifacts artifacts: 'trivy-result.*', onlyIfSuccessful: false
-              }
-            }
-
-          }
         }
-      }
-    }
 
-    stage('Deploy to Kubernetes') {
-      agent {
-        kubernetes {
-          yaml allInSinglePod()
-          defaultContainer 'kubectl'
+        stage('Building Images') {
+            parallel {
+
+                stage('Build Vote Image') {
+                    steps {
+                        container('kaniko-vote') {
+                            sh """
+                                ls -l ${WORKSPACE}/Voting-App/vote
+                                /kaniko/executor \
+                                  --context=${WORKSPACE}/Voting-App/vote \
+                                  --dockerfile=Dockerfile \
+                                  --destination=${REGISTRY}/${IMAGE}:vote-${TAG} \
+                                  --destination=${REGISTRY}/${IMAGE}:vote-latest \
+                            """
+                        }
+                    }
+                }
+
+                stage('Build Seed Image') {
+                    steps {
+                        container('kaniko-seed') {
+                            sh """
+                                /kaniko/executor \
+                                  --context=${WORKSPACE}/Voting-App/seed-data \
+                                  --dockerfile=Dockerfile \
+                                  --destination=${REGISTRY}/${IMAGE}:seed-${TAG} \
+                                  --destination=${REGISTRY}/${IMAGE}:seed-latest \
+                            """
+                        }
+                    }
+                }
+
+                stage('Build Worker Image') {
+                    steps {
+                        container('kaniko-worker') {
+                            sh """
+                                /kaniko/executor \
+                                  --context=${WORKSPACE}/Voting-App/worker \
+                                  --dockerfile=Dockerfile \
+                                  --destination=${REGISTRY}/${IMAGE}:worker-${TAG} \
+                                  --destination=${REGISTRY}/${IMAGE}:worker-latest \
+                            """
+                        }
+                    }
+                }
+
+                stage('Build Result Image') {
+                    steps {
+                        container('kaniko-result') {
+                            sh """
+                                /kaniko/executor \
+                                  --context=${WORKSPACE}/Voting-App/result \
+                                  --dockerfile=Dockerfile \
+                                  --destination=${REGISTRY}/${IMAGE}:result-${TAG} \
+                                  --destination=${REGISTRY}/${IMAGE}:result-latest \
+                            """
+                        }
+                    }
+                }
+
+            }
         }
-      }
-      steps {
-        container('kubectl') {
-          sh """
-            sed -i 's/:vote-latest/:vote-${TAG}/g' ${WORKSPACE}/Kubernetes/deployment/vote-deployment.yaml
-            sed -i 's/:worker-latest/:worker-${TAG}/g' ${WORKSPACE}/Kubernetes/deployment/worker-deployment.yaml
-            sed -i 's/:result-latest/:result-${TAG}/g' ${WORKSPACE}/Kubernetes/deployment/result-deployment.yaml
 
-            kubectl apply -f ${WORKSPACE}/Kubernetes/deployment/
-          """
+        stage('Trivy Scans') {
+            agent {
+                kubernetes {
+                    yaml singlePodForTrivy()
+                    defaultContainer 'trivy'
+                }
+            }
+
+            stages {
+
+                stage('Checkout Source for Scans') {
+                    steps {
+                        container('git') {
+                            echo "📦 Cloning source for Trivy scans..."
+                            git branch: 'main', url: 'https://github.com/JubelShaji/Dev-Sec-Ops.git'
+                        }
+                    }
+                }
+
+                stage('Scan Images') {
+                    parallel {
+
+                        stage('Scan Vote') {
+                            steps {
+                                container('trivy') {
+                                    sh """
+                                        trivy image --exit-code 0 --format json --output trivy-vote.json ${REGISTRY}/${IMAGE}:vote-${TAG}
+                                        trivy image --exit-code 0 --format template --template '@contrib/html.tpl' --output trivy-vote.html ${REGISTRY}/${IMAGE}:vote-${TAG}
+                                    """
+                                }
+                                archiveArtifacts artifacts: 'trivy-vote.*', onlyIfSuccessful: false
+                            }
+                        }
+
+                        stage('Scan Seed') {
+                            steps {
+                                container('trivy') {
+                                    sh """
+                                        trivy image --exit-code 0 --format json --output trivy-seed.json ${REGISTRY}/${IMAGE}:seed-${TAG}
+                                        trivy image --exit-code 0 --format template --template '@contrib/html.tpl' --output trivy-seed.html ${REGISTRY}/${IMAGE}:seed-${TAG}
+                                    """
+                                }
+                                archiveArtifacts artifacts: 'trivy-seed.*', onlyIfSuccessful: false
+                            }
+                        }
+
+                        stage('Scan Worker') {
+                            steps {
+                                container('trivy') {
+                                    sh """
+                                        trivy image --exit-code 0 --format json --output trivy-worker.json ${REGISTRY}/${IMAGE}:worker-${TAG}
+                                        trivy image --exit-code 0 --format template --template '@contrib/html.tpl' --output trivy-worker.html ${REGISTRY}/${IMAGE}:worker-${TAG}
+                                    """
+                                }
+                                archiveArtifacts artifacts: 'trivy-worker.*', onlyIfSuccessful: false
+                            }
+                        }
+
+                        stage('Scan Result') {
+                            steps {
+                                container('trivy') {
+                                    sh """
+                                        trivy image --exit-code 0 --format json --output trivy-result.json ${REGISTRY}/${IMAGE}:result-${TAG}
+                                        trivy image --exit-code 0 --format template --template '@contrib/html.tpl' --output trivy-result.html ${REGISTRY}/${IMAGE}:result-${TAG}
+                                    """
+                                }
+                                archiveArtifacts artifacts: 'trivy-result.*', onlyIfSuccessful: false
+                            }
+                        }
+
+                    }
+                }
+
+            }
         }
-      }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                container('kubectl') {
+                    sh """
+                        sed -i 's/:vote-latest/:vote-${TAG}/g' ${WORKSPACE}/Kubernetes/deployment/vote-deployment.yaml
+                        sed -i 's/:worker-latest/:worker-${TAG}/g' ${WORKSPACE}/Kubernetes/deployment/worker-deployment.yaml
+                        sed -i 's/:result-latest/:result-${TAG}/g' ${WORKSPACE}/Kubernetes/deployment/result-deployment.yaml
+
+                        kubectl apply -f ${WORKSPACE}/Kubernetes/deployment/
+                    """
+                }
+            }
+        }
+
     }
 
-  post {
-    always {
-      echo '📦 Trivy reports archived'
+    post {
+        always {
+            echo '📦 Trivy reports archived'
+        }
+        success {
+            echo '🎉 Pipeline completed successfully'
+        }
     }
-    success {
-      echo '🎉 Pipeline completed successfully'
-    }
-  }
 }
 
 // Pod definitions
 
 def allInSinglePod() {
-  """
+    """
 apiVersion: v1
 kind: Pod
 spec:
@@ -249,11 +237,14 @@ spec:
     - name: regcred
       secret:
         secretName: regcred
+        items:
+            - key: .dockerconfigjson
+              path: config.json
 """
 }
 
 def singlePodForTrivy() {
-  """
+    """
 apiVersion: v1
 kind: Pod
 spec:
