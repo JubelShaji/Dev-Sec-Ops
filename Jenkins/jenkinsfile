@@ -30,8 +30,8 @@ pipeline {
             container('kaniko-vote') {
               sh """
                 /kaniko/executor \
-                  --context=${WORKSPACE} \
-                  --dockerfile=Voting-App/vote/Dockerfile \
+                  --context=${WORKSPACE}/Voting-App/vote \
+                  --dockerfile=Dockerfile \
                   --destination=${REGISTRY}/${IMAGE}:vote-${TAG} \
                   --destination=${REGISTRY}/${IMAGE}:vote-latest \
                   --cache=true \
@@ -46,8 +46,8 @@ pipeline {
             container('kaniko-seed') {
               sh """
                 /kaniko/executor \
-                  --context=${WORKSPACE} \
-                  --dockerfile=Voting-App/seed/Dockerfile \
+                  --context=${WORKSPACE}/Voting-App/seed \
+                  --dockerfile=Dockerfile \
                   --destination=${REGISTRY}/${IMAGE}:seed-${TAG} \
                   --destination=${REGISTRY}/${IMAGE}:seed-latest \
                   --cache=true \
@@ -62,8 +62,8 @@ pipeline {
             container('kaniko-worker') {
               sh """
                 /kaniko/executor \
-                  --context=${WORKSPACE} \
-                  --dockerfile=Voting-App/worker/Dockerfile \
+                  --context=${WORKSPACE}/Voting-App/worker \
+                  --dockerfile=Dockerfile \
                   --destination=${REGISTRY}/${IMAGE}:worker-${TAG} \
                   --destination=${REGISTRY}/${IMAGE}:worker-latest \
                   --cache=true \
@@ -78,8 +78,8 @@ pipeline {
             container('kaniko-result') {
               sh """
                 /kaniko/executor \
-                  --context=${WORKSPACE} \
-                  --dockerfile=Voting-App/result/Dockerfile \
+                  --context=${WORKSPACE}/Voting-App/result \
+                  --dockerfile=Dockerfile \
                   --destination=${REGISTRY}/${IMAGE}:result-${TAG} \
                   --destination=${REGISTRY}/${IMAGE}:result-latest \
                   --cache=true \
