@@ -1,9 +1,5 @@
 pipeline {
-  agent {
-    kubernetes {
-      yaml allInSinglePod()
-    }
-  }
+  agent none
 
   environment {
     REGISTRY = 'jubelshaji'
@@ -13,19 +9,27 @@ pipeline {
 
   stages {
 
-    stage('Checkout Source') {
+    stage('Building Containers  .....') {
+      agent {
+        kubernetes {
+          yaml allInSinglePod()
+        }
+      }
+    }
+
+    stage('Checkout Source for Scans') {
       steps {
         container('git') {
-          echo "📦 Checking out source code..."
+          echo "📦 Cloning source for Trivy scans..."
           git branch: 'main', url: 'https://github.com/JubelShaji/Dev-Sec-Ops.git'
         }
       }
     }
 
-    stage('Build Images') {
+    stage ('Building Images') {
       parallel {
 
-        stage('Build Vote') {
+        stage('Build Vote Image') {
           steps {
             container('kaniko-vote') {
               sh """
@@ -41,7 +45,7 @@ pipeline {
           }
         }
 
-        stage('Build Seed') {
+        stage('Build Seed Image') {
           steps {
             container('kaniko-seed') {
               sh """
@@ -57,7 +61,7 @@ pipeline {
           }
         }
 
-        stage('Build Worker') {
+        stage('Build Worker Image') {
           steps {
             container('kaniko-worker') {
               sh """
@@ -73,7 +77,7 @@ pipeline {
           }
         }
 
-        stage('Build Result') {
+        stage('Build Result Image') {
           steps {
             container('kaniko-result') {
               sh """
@@ -88,65 +92,90 @@ pipeline {
             }
           }
         }
+      }
+    }
+  }
 
+  stages {
+    stage('Building Containers ....') {
+      agent {
+        kubernetes {
+          yaml singlePodForTrivy()
+          defaultContainer 'trivy'
+        }
+      }
+    stage('Checkout Source for Scans') {
+      steps {
+        container('git') {
+          echo "📦 Cloning source for Trivy scans..."
+          git branch: 'main', url: 'https://github.com/JubelShaji/Dev-Sec-Ops.git'
+        }
       }
     }
 
-    stage('Trivy Scan Images') {
+    stage('Scan Images') {
       parallel {
 
         stage('Scan Vote') {
-          steps {
-            container('trivy') {
-              sh """
-                trivy image --exit-code 0 --format json --output trivy-vote.json ${REGISTRY}/${IMAGE}:vote-${TAG}
-                trivy image --exit-code 0 --format template --template '@contrib/html.tpl' --output trivy-vote.html ${REGISTRY}/${IMAGE}:vote-${TAG}
-              """
+              steps {
+                container('trivy') {
+                  sh """
+                    trivy image --exit-code 0 --format json --output trivy-vote.json ${REGISTRY}/${IMAGE}:vote-${TAG}
+                    trivy image --exit-code 0 --format template --template '@contrib/html.tpl' --output trivy-vote.html ${REGISTRY}/${IMAGE}:vote-${TAG}
+                  """
+                }
+                archiveArtifacts artifacts: 'trivy-vote.*', onlyIfSuccessful: false
+              }
             }
-            archiveArtifacts artifacts: 'trivy-vote.*', onlyIfSuccessful: false
+
+            stage('Scan Seed') {
+              steps {
+                container('trivy') {
+                  sh """
+                    trivy image --exit-code 0 --format json --output trivy-seed.json ${REGISTRY}/${IMAGE}:seed-${TAG}
+                    trivy image --exit-code 0 --format template --template '@contrib/html.tpl' --output trivy-seed.html ${REGISTRY}/${IMAGE}:seed-${TAG}
+                  """
+                }
+                archiveArtifacts artifacts: 'trivy-seed.*', onlyIfSuccessful: false
+              }
+            }
+
+            stage('Scan Worker') {
+              steps {
+                container('trivy') {
+                  sh """
+                    trivy image --exit-code 0 --format json --output trivy-worker.json ${REGISTRY}/${IMAGE}:worker-${TAG}
+                    trivy image --exit-code 0 --format template --template '@contrib/html.tpl' --output trivy-worker.html ${REGISTRY}/${IMAGE}:worker-${TAG}
+                  """
+                }
+                archiveArtifacts artifacts: 'trivy-worker.*', onlyIfSuccessful: false
+              }
+            }
+
+            stage('Scan Result') {
+              steps {
+                container('trivy') {
+                  sh """
+                    trivy image --exit-code 0 --format json --output trivy-result.json ${REGISTRY}/${IMAGE}:result-${TAG}
+                    trivy image --exit-code 0 --format template --template '@contrib/html.tpl' --output trivy-result.html ${REGISTRY}/${IMAGE}:result-${TAG}
+                  """
+                }
+                archiveArtifacts artifacts: 'trivy-result.*', onlyIfSuccessful: false
+              }
+            }
+
           }
         }
-
-        stage('Scan Seed') {
-          steps {
-            container('trivy') {
-              sh """
-                trivy image --exit-code 0 --format json --output trivy-seed.json ${REGISTRY}/${IMAGE}:seed-${TAG}
-                trivy image --exit-code 0 --format template --template '@contrib/html.tpl' --output trivy-seed.html ${REGISTRY}/${IMAGE}:seed-${TAG}
-              """
-            }
-            archiveArtifacts artifacts: 'trivy-seed.*', onlyIfSuccessful: false
-          }
-        }
-
-        stage('Scan Worker') {
-          steps {
-            container('trivy') {
-              sh """
-                trivy image --exit-code 0 --format json --output trivy-worker.json ${REGISTRY}/${IMAGE}:worker-${TAG}
-                trivy image --exit-code 0 --format template --template '@contrib/html.tpl' --output trivy-worker.html ${REGISTRY}/${IMAGE}:worker-${TAG}
-              """
-            }
-            archiveArtifacts artifacts: 'trivy-worker.*', onlyIfSuccessful: false
-          }
-        }
-
-        stage('Scan Result') {
-          steps {
-            container('trivy') {
-              sh """
-                trivy image --exit-code 0 --format json --output trivy-result.json ${REGISTRY}/${IMAGE}:result-${TAG}
-                trivy image --exit-code 0 --format template --template '@contrib/html.tpl' --output trivy-result.html ${REGISTRY}/${IMAGE}:result-${TAG}
-              """
-            }
-            archiveArtifacts artifacts: 'trivy-result.*', onlyIfSuccessful: false
-          }
-        }
-
       }
     }
 
     stage('Deploy to Kubernetes') {
+      agent {
+        kubernetes {
+          yaml allInSinglePod()
+          defaultContainer 'kubectl'
+        }
+      }
       steps {
         container('kubectl') {
           sh """
@@ -160,8 +189,6 @@ pipeline {
       }
     }
 
-  }
-
   post {
     always {
       echo '📦 Trivy reports archived'
@@ -172,7 +199,7 @@ pipeline {
   }
 }
 
-
+// Pod definitions
 
 def allInSinglePod() {
   """
@@ -214,10 +241,6 @@ spec:
         - name: regcred
           mountPath: /kaniko/.docker
 
-    - name: trivy
-      image: aquasec/trivy:latest
-      command: ['sleep','infinity']
-
     - name: kubectl
       image: bitnami/kubectl:latest
       command: ['sleep','infinity']
@@ -226,5 +249,25 @@ spec:
     - name: regcred
       secret:
         secretName: regcred
+"""
+}
+
+def singlePodForTrivy() {
+  """
+apiVersion: v1
+kind: Pod
+spec:
+  serviceAccountName: jenkins
+  containers:
+    - name: git
+      image: alpine/git:latest
+      command: ['cat']
+      tty: true
+
+    - name: trivy
+      image: aquasec/trivy:latest
+      command: ['sleep','infinity']
+
+  volumes: []
 """
 }
