@@ -3,7 +3,7 @@ pipeline {
 
   environment {
     REGISTRY = 'jubelshaji'
-    IMAGE    = 'simple_vote_app'
+    IMAGE    = 'vote_app'
     TAG      = "${BUILD_NUMBER}"
   }
 
