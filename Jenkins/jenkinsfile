@@ -142,16 +142,25 @@ pipeline {
             steps {
                 container('kubectl') {
                     sh """
+                        set -x
+
                         sed -i 's/:vote-latest/:vote-${TAG}/g' ${WORKSPACE}/Kubernetes/deployment/vote-deployment.yaml
                         sed -i 's/:worker-latest/:worker-${TAG}/g' ${WORKSPACE}/Kubernetes/deployment/worker-deployment.yaml
                         sed -i 's/:result-latest/:result-${TAG}/g' ${WORKSPACE}/Kubernetes/deployment/result-deployment.yaml
 
                         kubectl apply -f ${WORKSPACE}/Kubernetes/deployment/
+
+                        echo '--- Current Pods ---'
+                        kubectl get pods -o wide
+
+                        echo '--- Waiting for rollouts ---'
+                        kubectl rollout status deployment/vote --timeout=120s
+                        kubectl rollout status deployment/worker --timeout=120s
+                        kubectl rollout status deployment/result --timeout=120s
                     """
                 }
             }
         }
-
     }
 
     post {
@@ -208,7 +217,13 @@ spec:
 
     - name: kubectl
       image: bitnami/kubectl:latest
-      command: ['sleep','infinity']
+      command: ['cat']
+      tty: true
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+
 
   volumes:
     - name: regcred
