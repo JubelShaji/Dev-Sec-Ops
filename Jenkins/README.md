@@ -5,6 +5,7 @@ docker run -d \
   --restart unless-stopped \
   -p 8080:8080 \
   -p 50000:50000 \
+  -e JAVA_OPTS="-Dorg.jenkinsci.plugins.durabletask.BourneShellScript.LAUNCH_DIAGNOSTICS=true" \
   -v jenkins_home:/var/jenkins_home \
   jenkins/jenkins:lts
 ```
