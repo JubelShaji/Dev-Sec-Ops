@@ -15,7 +15,7 @@ spec:
     - name: http
       port: 80
       targetPort: http
-      nodePort: 30080       # Choose a port 30000-32767
+      nodePort: 30000       # Choose a port 30000-32767
     - name: https
       port: 443
       targetPort: https
