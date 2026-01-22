@@ -22,4 +22,7 @@ spec:
       nodePort: 30443       # Choose a port 30000-32767
 ```
 
-
+## Create 'ingress.yaml' and apply in kubernetes :
+```
+kubectl apply -f ingress.yaml
+```
