@@ -15,7 +15,7 @@ spec:
         app: vote
     spec:
       containers:
-      - image: jubelshaji/simple_vote_app:vote-latest
+      - image: jubelshaji/vote_app:vote-latest
         name: vote
         ports:
         - containerPort: 80
