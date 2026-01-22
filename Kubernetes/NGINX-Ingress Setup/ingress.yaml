@@ -22,4 +22,4 @@ spec:
           service:
             name: result
             port:
-              number: 81
+              number: 80
