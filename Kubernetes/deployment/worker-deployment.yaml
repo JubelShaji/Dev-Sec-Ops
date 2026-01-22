@@ -15,5 +15,5 @@ spec:
         app: worker
     spec:
       containers:
-      - image: jubelshaji/simple_vote_app:worker-latest
+      - image: jubelshaji/vote_app:worker-latest
         name: worker
