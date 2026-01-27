@@ -10,11 +10,6 @@ docker run -d \
   jenkins/jenkins:lts
 ```
 
-## Jenkins-agent with trivy installed :
-```
-The Dockerfile here builds jenkins-agent image  with trivy installed , build and push this image to a registry which kubernetes can access. It is referenced in  jenkinsfile.
-```
-
 ## Get Jenkins Initial Admin Password :
 ```
 docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
