@@ -20,7 +20,8 @@ docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
 Use ' voteapp ' , otherwise change path of kaniko build context for every build in the pipeline.
 ```
 
-## Node Exporter :
+## For Monitoring :
+### Node Exporter (for host monitoring) :
 ```
 docker run -d \
   --name node-exporter \
@@ -30,4 +31,9 @@ docker run -d \
   -v "/:/host:ro,rslave" \
   prom/node-exporter \
   --path.rootfs=/host
+```
+
+### Install Plugin (To monitor jenkins app)
+```
+Install 'Prometheus metrics plugin' and restart
 ```
