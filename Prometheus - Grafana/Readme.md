@@ -16,10 +16,11 @@ docker run -d \
 ### Create Configuration File :
 ```
 mkdir -p monitoring/prometheus
-cd monitoring/prometheus
-nano prometheus.yml
+cd monitoring
+nano prometheus/prometheus.yml
 ```
 ### Create 'docker-compose.yml' and run :
 ```
+nano docker-compose.yml
 docker compose up -d
 ```
