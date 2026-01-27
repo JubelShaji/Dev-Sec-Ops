@@ -1,0 +1,46 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+
+# Prometheus/Grafana host
+- job_name: prometheus-host
+  static_configs:
+  - targets:
+    - <M1_IP>:9100
+
+# Jenkins host
+- job_name: jenkins-host
+  static_configs:
+  - targets:
+    - <M2_IP>:9100
+
+# Jenkins app metrics
+- job_name: jenkins
+  metrics_path: /prometheus
+  static_configs:
+  - targets:
+    - <M2_IP>:8080
+
+# Kubernetes worker nodes (Node Exporter)
+- job_name: k8s-workers
+  static_configs:
+  - targets:
+    - <WORKER1_IP>:9100
+    - <WORKER2_IP>:9100
+
+# Kubernetes kubelet / cAdvisor
+- job_name: kubernetes-kubelet
+  scheme: https
+  bearer_token: <K8S_TOKEN>
+  tls_config:
+    insecure_skip_verify: true
+  kubernetes_sd_configs:
+  - role: node
+    api_server: https://<K8S_API>:6443
+  relabel_configs:
+  - target_label: __address__
+    replacement: kubernetes.default.svc:443
+  - source_labels: [__meta_kubernetes_node_name]
+    target_label: __metrics_path__
+    replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
