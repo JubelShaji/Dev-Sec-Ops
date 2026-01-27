@@ -12,13 +12,12 @@ docker run -d \
 ```
 
 ## Prometheus Configuration
-### Create directory :
-```
-mkdir -p monitoring/prometheus
-```
+
 ### Create Configuration File :
 ```
-prometheus.yml
+mkdir -p monitoring/prometheus
+cd monitoring/prometheus
+nano prometheus.yml
 ```
 ### Create 'docker-compose.yml' and run :
 ```
