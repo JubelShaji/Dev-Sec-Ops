@@ -19,3 +19,15 @@ docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
 ```
 Use ' voteapp ' , otherwise change path of kaniko build context for every build in the pipeline.
 ```
+
+## Node Exporter :
+```
+docker run -d \
+  --name node-exporter \
+  --restart unless-stopped \
+  --net="host" \
+  --pid="host" \
+  -v "/:/host:ro,rslave" \
+  prom/node-exporter \
+  --path.rootfs=/host
+```
