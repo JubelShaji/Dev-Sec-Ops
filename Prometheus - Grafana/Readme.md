@@ -19,6 +19,12 @@ mkdir -p monitoring/prometheus
 cd monitoring
 nano prometheus/prometheus.yml
 ```
+### Token and CA-Certificate
+```
+Inside  prometheus directory create ...
+k8s-ca.crt (/etc/kubernetes/pki/ca.crt)
+k8s-token (kubectl -n monitoring create token prometheus --duration=24h)
+```
 ### Create 'docker-compose.yml' and run :
 ```
 nano docker-compose.yml
