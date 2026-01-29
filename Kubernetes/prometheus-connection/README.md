@@ -5,8 +5,9 @@ kubectl apply -f node-exporter.yaml
 ```
 
 ## Prometheus permission to access K8s-API:
+### Create 'prometheus-sa_rbac.yaml' and apply in kubernetes:
 ``` 
-Create 'prometheus-sa_rbac.yaml' and apply in kubernetes
+kubectl apply -f prometheus-sa_rbac.yaml
 ```
 ```
 kubectl create token prometheus --duration=24h
