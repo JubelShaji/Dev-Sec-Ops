@@ -11,19 +11,35 @@ docker run -d \
 
 ```
 
-## Prometheus Configuration
+# Prometheus
 
-### Create Configuration File :
+## Create Directories :
 ```
 mkdir -p monitoring/prometheus
-cd monitoring
-nano prometheus/prometheus.yml
 ```
-### Token and CA-Certificate
 ```
-Inside  prometheus directory create ...
-k8s-ca.crt (/etc/kubernetes/pki/ca.crt)
-k8s-token (kubectl -n monitoring create token prometheus --duration=24h)
+Create 'docker-compose.yml' inside monitoring
+Create 'prometheus.yml' inside prometheus
+```
+## Token and CA-Certificate
+### Inside  prometheus directory create 'k8s-ca.crt'
+#### Copy from Kubernetes Control-pane
+```
+cat /etc/kubernetes/pki/ca.crt
+```
+### Inside  prometheus directory create 'k8s-token'
+#### From Kubernetes Control-pane
+#### Create and apply 'prometheus-token.yaml'
+```
+kubectl apply -f prometheus-token.yaml
+```
+#### Create a file 'k8s-secret-token' with secret-token
+```
+kubectl -n monitoring get secret prometheus-ext-token   -o jsonpath='{.data.token}' | base64 -d > k8s-secret-token
+```
+#### Copy from 'k8s-secret-token' and to create 'k8s-token'
+```
+cat k8s-secret-token
 ```
 ### Create 'docker-compose.yml' and run :
 ```
