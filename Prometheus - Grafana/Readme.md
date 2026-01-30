@@ -33,13 +33,13 @@ cat /etc/kubernetes/pki/ca.crt
 ```
 kubectl apply -f prometheus-token.yaml
 ```
-#### Create a file 'k8s-secret-token' with secret-token
+#### Create a file 'k8s-token'
 ```
-kubectl -n monitoring get secret prometheus-ext-token   -o jsonpath='{.data.token}' | base64 -d > k8s-secret-token
+kubectl -n monitoring get secret prometheus-ext-token   -o jsonpath='{.data.token}' | base64 -d > k8s-token
 ```
-#### Copy from 'k8s-secret-token' and to create 'k8s-token'
+#### Copy contents of 'k8s-token' from k8s Control Pane
 ```
-cat k8s-secret-token
+cat k8s-token
 ```
 ### Create 'docker-compose.yml' and run :
 ```
