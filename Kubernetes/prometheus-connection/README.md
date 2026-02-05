@@ -9,6 +9,3 @@ kubectl apply -f node-exporter.yaml
 ``` 
 kubectl apply -f prometheus-sa_rbac.yaml
 ```
-```
-kubectl create token prometheus --duration=24h
-```
