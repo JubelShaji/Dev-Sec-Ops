@@ -21,14 +21,9 @@ mkdir -p monitoring/prometheus
 Create 'docker-compose.yml' inside monitoring
 Create 'prometheus.yml' inside prometheus
 ```
-## Token and CA-Certificate
-### Inside  prometheus directory create 'k8s-ca.crt'
-#### Copy from Kubernetes Control-pane
-```
-cat /etc/kubernetes/pki/ca.crt
-```
-### Inside  prometheus directory create 'k8s-token'
-#### From Kubernetes Control-pane
+## Inside  prometheus directory create 'k8s-token'
+### Copy from Kubernetes Control-pane
+#### From Kubernetes Control-pane :
 #### Create and apply 'prometheus-token.yaml'
 ```
 kubectl apply -f prometheus-token.yaml
