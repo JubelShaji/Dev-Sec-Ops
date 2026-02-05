@@ -28,16 +28,12 @@ Create 'prometheus.yml' inside prometheus
 ```
 kubectl apply -f prometheus-token.yaml
 ```
-#### Create a file 'k8s-token'
+#### Copy token
 ```
-kubectl -n monitoring get secret prometheus-ext-token   -o jsonpath='{.data.token}' | base64 -d > k8s-token
+kubectl -n monitoring get secret prometheus-ext-token   -o jsonpath='{.data.token}' | base64 -d
 ```
-#### Copy contents of 'k8s-token' from k8s Control Pane
+
+## Run docker-compose file :
 ```
-cat k8s-token
-```
-### Create 'docker-compose.yml' and run :
-```
-nano docker-compose.yml
 docker compose up -d
 ```
