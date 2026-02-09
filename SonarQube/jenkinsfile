@@ -32,9 +32,11 @@ pipeline {
                         sh """
                             sonar-scanner \
                                 -Dsonar.projectKey=vote \
+                                -Dsonar.projectName=Vote \
                                 -Dsonar.sources=Voting-App/vote \
-                                -Dsonar.exclusions=**/static/**,**/templates/** \
-                                -Dsonar.python.version=3.11
+                                -Dsonar.python.version=3.11 \
+                                -Dsonar.exclusions=static/**,templates/**,Dockerfile,*.sh,docker-compose*.yml \
+                                -Dsonar.login=$SONAR_AUTH_TOKEN
                         """
                     }
                 }
@@ -46,10 +48,13 @@ pipeline {
                     withSonarQubeEnv('sonarqube') {
                         sh """
                             sonar-scanner \
-                                -Dsonar.projectKey=seed \
+                                -Dsonar.projectKey=seed-data \
+                                -Dsonar.projectName=Seed-Data \
                                 -Dsonar.sources=Voting-App/seed-data \
-                                -Dsonar.exclusions=**/static/**,**/templates/** \
-                                -Dsonar.python.version=3.11
+                                -Dsonar.python.version=3.11 \
+                                -Dsonar.inclusions=*.py \
+                                -Dsonar.exclusions=Dockerfile,*.sh,docker-compose*.yml \
+                                -Dsonar.login=$SONAR_AUTH_TOKEN
                         """
                     }
                 }
@@ -60,11 +65,10 @@ pipeline {
                 container('sonar') {
                     withSonarQubeEnv('sonarqube') {
                         sh """
-                            sonar-scanner \
-                                -Dsonar.projectKey=worker \
-                                -Dsonar.sources=Voting-App/worker \
-                                -Dsonar.exclusions=**/static/**,**/templates/** \
-                                -Dsonar.python.version=3.11
+                            dotnet sonarscanner begin /k:"worker" /n:"Worker" /d:sonar.login=$SONAR_AUTH_TOKEN \
+                                /d:sonar.exclusions=**/bin/**,**/obj/**,Dockerfile,*.sh,docker-compose*.yml
+                            dotnet build Voting-App/worker/Worker.csproj
+                            dotnet sonarscanner end /d:sonar.login=$SONAR_AUTH_TOKEN
                         """
                     }
                 }
@@ -77,9 +81,12 @@ pipeline {
                         sh """
                             sonar-scanner \
                                 -Dsonar.projectKey=result \
+                                -Dsonar.projectName=Result \
                                 -Dsonar.sources=Voting-App/result \
-                                -Dsonar.exclusions=**/static/**,**/templates/** \
-                                -Dsonar.python.version=3.11
+                                -Dsonar.language=js \
+                                -Dsonar.javascript.lcov.reportPaths=Voting-App/result/coverage/lcov.info \
+                                -Dsonar.exclusions=node_modules/**,Dockerfile,*.sh,docker-compose*.yml \
+                                -Dsonar.login=$SONAR_AUTH_TOKEN
                         """
                     }
                 }
