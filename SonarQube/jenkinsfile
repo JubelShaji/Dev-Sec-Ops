@@ -1,0 +1,328 @@
+pipeline {
+    agent {
+        kubernetes {
+            yaml allInSinglePod()
+        }
+    }
+
+    environment {
+        REGISTRY = 'jubelshaji'
+        IMAGE    = 'vote_app'
+        TAG      = "${BUILD_NUMBER}"
+    }
+
+    stages {
+
+        stage('Checkout Source') {
+            steps {
+                container('git') {
+                    echo "📦 Cloning source..."
+                    git branch: 'main', url: 'https://github.com/JubelShaji/Dev-Sec-Ops.git'
+                }
+            }
+        }
+
+        // ------------------ SONARQUBE ------------------
+        stage('SonarQube Analysis') {
+          parallel {
+            stage('Vote Service') {
+              steps {
+                container('sonar') {
+                    withSonarQubeEnv('sonarqube') {
+                        sh """
+                            sonar-scanner \
+                                -Dsonar.projectKey=vote \
+                                -Dsonar.sources=Voting-App/vote \
+                                -Dsonar.exclusions=**/static/**,**/templates/** \
+                                -Dsonar.python.version=3.11
+                        """
+                    }
+                }
+              }
+            }
+            stage('Seed Service') {
+              steps {
+                container('sonar') {
+                    withSonarQubeEnv('sonarqube') {
+                        sh """
+                            sonar-scanner \
+                                -Dsonar.projectKey=seed \
+                                -Dsonar.sources=Voting-App/seed-data \
+                                -Dsonar.exclusions=**/static/**,**/templates/** \
+                                -Dsonar.python.version=3.11
+                        """
+                    }
+                }
+              }
+            }
+            stage('Worker Service') {
+              steps {
+                container('sonar') {
+                    withSonarQubeEnv('sonarqube') {
+                        sh """
+                            sonar-scanner \
+                                -Dsonar.projectKey=worker \
+                                -Dsonar.sources=Voting-App/worker \
+                                -Dsonar.exclusions=**/static/**,**/templates/** \
+                                -Dsonar.python.version=3.11
+                        """
+                    }
+                }
+              }
+            }
+            stage('Result Service') {
+              steps {
+                container('sonar') {
+                    withSonarQubeEnv('sonarqube') {
+                        sh """
+                            sonar-scanner \
+                                -Dsonar.projectKey=result \
+                                -Dsonar.sources=Voting-App/result \
+                                -Dsonar.exclusions=**/static/**,**/templates/** \
+                                -Dsonar.python.version=3.11
+                        """
+                    }
+                }
+              }
+            }
+          }
+        }  
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        // ------------------ BUILD IMAGES ------------------
+        stage('Building Images') {
+            parallel {
+
+                stage('Build Vote Image') {
+                    steps {
+                        container('kaniko-vote') {
+                            sh """
+                                /kaniko/executor \
+                                  --context=${WORKSPACE}/Voting-App/vote \
+                                  --dockerfile=Dockerfile \
+                                  --destination=${REGISTRY}/${IMAGE}:vote-${TAG} \
+                                  --destination=${REGISTRY}/${IMAGE}:vote-latest
+                            """
+                        }
+                    }
+                }
+
+                stage('Build Seed Image') {
+                    steps {
+                        container('kaniko-seed') {
+                            sh """
+                                /kaniko/executor \
+                                  --context=${WORKSPACE}/Voting-App/seed-data \
+                                  --dockerfile=Dockerfile \
+                                  --destination=${REGISTRY}/${IMAGE}:seed-${TAG} \
+                                  --destination=${REGISTRY}/${IMAGE}:seed-latest
+                            """
+                        }
+                    }
+                }
+
+                stage('Build Worker Image') {
+                    steps {
+                        container('kaniko-worker') {
+                            sh """
+                                /kaniko/executor \
+                                  --context=${WORKSPACE}/Voting-App/worker \
+                                  --dockerfile=Dockerfile \
+                                  --destination=${REGISTRY}/${IMAGE}:worker-${TAG} \
+                                  --destination=${REGISTRY}/${IMAGE}:worker-latest
+                            """
+                        }
+                    }
+                }
+
+                stage('Build Result Image') {
+                    steps {
+                        container('kaniko-result') {
+                            sh """
+                                /kaniko/executor \
+                                  --context=${WORKSPACE}/Voting-App/result \
+                                  --dockerfile=Dockerfile \
+                                  --destination=${REGISTRY}/${IMAGE}:result-${TAG} \
+                                  --destination=${REGISTRY}/${IMAGE}:result-latest
+                            """
+                        }
+                    }
+                }
+            }
+        }
+
+        // ------------------ TRIVY SCANS ------------------
+        stage('Trivy Scans') {
+            agent {
+                kubernetes {
+                    yaml singlePodForTrivy()
+                    defaultContainer 'trivy'
+                }
+            }
+            stages {
+                stage('Scan Vote') {
+                    steps {
+                        container('trivy') {
+                            sh """
+                                trivy image --scanners vuln --exit-code 0 --format json --output trivy-vote.json ${REGISTRY}/${IMAGE}:vote-${TAG}
+                            """
+                        }
+                        archiveArtifacts artifacts: 'trivy-vote.*', onlyIfSuccessful: false
+                    }
+                }
+
+                stage('Scan Seed') {
+                    steps {
+                        container('trivy') {
+                            sh """
+                                trivy image --scanners vuln --exit-code 0 --format json --output trivy-seed.json ${REGISTRY}/${IMAGE}:seed-${TAG}
+                            """
+                        }
+                        archiveArtifacts artifacts: 'trivy-seed.*', onlyIfSuccessful: false
+                    }
+                }
+
+                stage('Scan Worker') {
+                    steps {
+                        container('trivy') {
+                            sh """
+                                trivy image --scanners vuln --exit-code 0 --format json --output trivy-worker.json ${REGISTRY}/${IMAGE}:worker-${TAG}
+                            """
+                        }
+                        archiveArtifacts artifacts: 'trivy-worker.*', onlyIfSuccessful: false
+                    }
+                }
+
+                stage('Scan Result') {
+                    steps {
+                        container('trivy') {
+                            sh """
+                                trivy image --scanners vuln --exit-code 0 --format json --output trivy-result.json ${REGISTRY}/${IMAGE}:result-${TAG}
+                            """
+                        }
+                        archiveArtifacts artifacts: 'trivy-result.*', onlyIfSuccessful: false
+                    }
+                }
+            }
+        }
+
+        // ------------------ DEPLOY ------------------
+        stage('Deploy to Kubernetes') {
+            steps {
+                container('kubectl') {
+                    sh """
+                        sed -i 's/:vote-latest/:vote-${TAG}/g' ${WORKSPACE}/Kubernetes/deployment/vote-deployment.yaml
+                        sed -i 's/:worker-latest/:worker-${TAG}/g' ${WORKSPACE}/Kubernetes/deployment/worker-deployment.yaml
+                        sed -i 's/:result-latest/:result-${TAG}/g' ${WORKSPACE}/Kubernetes/deployment/result-deployment.yaml
+
+                        kubectl apply -f ${WORKSPACE}/Kubernetes/deployment/
+
+                        echo '--- Current Pods ---'
+                        kubectl get pods -o wide
+
+                        echo '--- Waiting for rollouts ---'
+                        kubectl rollout status deployment/vote --timeout=120s
+                        kubectl rollout status deployment/worker --timeout=120s
+                        kubectl rollout status deployment/result --timeout=120s
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo '📦 Trivy reports archived'
+        }
+        success {
+            echo '🎉 Pipeline completed successfully'
+        }
+    }
+}
+
+// ------------------ POD DEFINITIONS ------------------
+
+def allInSinglePod() {
+    """
+apiVersion: v1
+kind: Pod
+spec:
+  serviceAccountName: jenkins
+  containers:
+    - name: git
+      image: alpine/git:latest
+      command: ['cat']
+      tty: true
+
+    - name: kaniko-vote
+      image: gcr.io/kaniko-project/executor:debug
+      command: ['sleep','infinity']
+      volumeMounts:
+        - name: regcred
+          mountPath: /kaniko/.docker
+
+    - name: kaniko-seed
+      image: gcr.io/kaniko-project/executor:debug
+      command: ['sleep','infinity']
+      volumeMounts:
+        - name: regcred
+          mountPath: /kaniko/.docker
+
+    - name: kaniko-worker
+      image: gcr.io/kaniko-project/executor:debug
+      command: ['sleep','infinity']
+      volumeMounts:
+        - name: regcred
+          mountPath: /kaniko/.docker
+
+    - name: kaniko-result
+      image: gcr.io/kaniko-project/executor:debug
+      command: ['sleep','infinity']
+      volumeMounts:
+        - name: regcred
+          mountPath: /kaniko/.docker
+
+    - name: kubectl
+      image: bitnami/kubectl:latest
+      command: ['cat']
+      tty: true
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+
+    - name: sonar
+      image: sonarsource/sonar-scanner-cli:latest
+      command: ['cat']
+      tty: true
+
+  volumes:
+    - name: regcred
+      secret:
+        secretName: regcred
+        items:
+            - key: .dockerconfigjson
+              path: config.json
+"""
+}
+
+def singlePodForTrivy() {
+    """
+apiVersion: v1
+kind: Pod
+spec:
+  serviceAccountName: jenkins
+  containers:
+    - name: trivy
+      image: aquasec/trivy:latest
+      command: ['sleep','infinity']
+  volumes: []
+"""
+}
